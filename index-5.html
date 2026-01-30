@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Land Distribution Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn-toolbar {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-toolbar:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-toolbar.load {
+            background: #27ae60;
+        }
+
+        .btn-toolbar.load:hover {
+            background: #229954;
+        }
+
+        .btn-toolbar.share {
+            background: #9b59b6;
+        }
+
+        .btn-toolbar.share:hover {
+            background: #8e44ad;
+        }
+
+        .share-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .share-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .share-modal-header {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .share-link-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .share-link-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-family: monospace;
+        }
+
+        .btn-copy {
+            padding: 12px 20px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-copy:hover {
+            background: #229954;
+        }
+
+        .btn-close {
+            width: 100%;
+            padding: 12px;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-close:hover {
+            background: #7f8c8d;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1em;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .hint {
+            font-size: 0.85em;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #ffe6e6;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .info {
+            color: #2980b9;
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            border-left: 4px solid #2980b9;
+        }
+
+        .success {
+            color: #27ae60;
+            background: #d4edda;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            border-left: 4px solid #27ae60;
+        }
+
+        .warning {
+            color: #f39c12;
+            background: #fff3cd;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            border-left: 4px solid #f39c12;
+        }
+
+        .land-pieces-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .land-piece-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 12px;
+            margin-bottom: 15px;
+            align-items: start;
+        }
+
+        .land-piece-row input {
+            padding: 12px;
+        }
+
+        .computed-area {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-weight: 600;
+            color: #667eea;
+            min-height: 49px;
+        }
+
+        .btn-icon {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .btn-add {
+            width: 100%;
+            padding: 14px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 10px;
+        }
+
+        .btn-add:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        button.btn-primary {
+            flex: 1;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button.btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        button.btn-primary:active {
+            transform: translateY(0);
+        }
+
+        button.btn-secondary {
+            flex: 1;
+            padding: 16px;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button.btn-secondary:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+
+        .results {
+            margin-top: 30px;
+        }
+
+        .results-header {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .results-info {
+            text-align: center;
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 0.95em;
+        }
+
+        .solution-number {
+            background: #667eea;
+            color: white;
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .solution-number.best-effort {
+            background: #f39c12;
+        }
+
+        .solution-container {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .person-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .person-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .person-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .person-name {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .person-total {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #667eea;
+            background: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            box-shadow: 0 2px 10px rgba(102, 126, 234, 0.2);
+        }
+
+        .land-pieces {
+            color: #555;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .land-pieces-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .pieces-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .piece-item {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .piece-name {
+            font-weight: 600;
+            color: #333;
+            flex: 1;
+        }
+
+        .piece-details {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .piece-calculation {
+            color: #999;
+        }
+
+        .piece-final {
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stats {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 25px;
+        }
+
+        .stats.best-effort {
+            background: #fff3cd;
+            border-left: 4px solid #f39c12;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .stats-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .stats-text {
+            font-size: 0.95em;
+            color: #155724;
+            font-weight: 600;
+        }
+
+        .stats.best-effort .stats-text {
+            color: #856404;
+        }
+
+        .stats-value {
+            color: #28a745;
+            font-weight: 700;
+        }
+
+        .stats.best-effort .stats-value {
+            color: #f39c12;
+        }
+
+        .column-labels {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 12px;
+            margin-bottom: 10px;
+            padding: 0 5px;
+        }
+
+        .column-label {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-size: 1.5em;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .land-piece-row {
+                grid-template-columns: 1fr;
+            }
+
+            .column-labels {
+                display: none;
+            }
+
+            .computed-area {
+                margin-bottom: 10px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .toolbar {
+                flex-direction: column;
+            }
+
+            .person-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .person-total {
+                align-self: stretch;
+                text-align: center;
+            }
+
+            .piece-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .piece-details {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .stats-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading...</div>
+    <div id="root"></div>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script type="text/babel">
+        window.addEventListener('load', function() {
+            document.getElementById('loading').style.display = 'none';
+            
+            const { useState, useEffect } = React;
+
+            // Simple cloud storage using browser's localStorage with sync capability
+            const CloudStorage = {
+                generateId: () => {
+                    return 'ld-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                },
+                
+                save: (data) => {
+                    const id = CloudStorage.generateId();
+                    const storageData = {
+                        ...data,
+                        id,
+                        lastModified: new Date().toISOString()
+                    };
+                    localStorage.setItem(id, JSON.stringify(storageData));
+                    return id;
+                },
+                
+                load: (id) => {
+                    const data = localStorage.getItem(id);
+                    return data ? JSON.parse(data) : null;
+                },
+                
+                getShareableLink: (id) => {
+                    const baseUrl = window.location.href.split('?')[0];
+                    return `${baseUrl}?share=${id}`;
+                },
+                
+                getIdFromUrl: () => {
+                    const params = new URLSearchParams(window.location.search);
+                    return params.get('share');
+                }
+            };
+
+            function LandDistributionApp() {
+                const [landPieces, setLandPieces] = useState([
+                    { id: 1, name: '', baseArea: '', factor: '1' }
+                ]);
+                const [numberOfPeople, setNumberOfPeople] = useState('');
+                const [allDistributions, setAllDistributions] = useState([]);
+                const [errorMessage, setErrorMessage] = useState('');
+                const [infoMessage, setInfoMessage] = useState('');
+                const [successMessage, setSuccessMessage] = useState('');
+                const [warningMessage, setWarningMessage] = useState('');
+                const [showShareModal, setShowShareModal] = useState(false);
+                const [shareLink, setShareLink] = useState('');
+
+                // Load shared data on mount
+                useEffect(() => {
+                    const sharedId = CloudStorage.getIdFromUrl();
+                    if (sharedId) {
+                        const sharedData = CloudStorage.load(sharedId);
+                        if (sharedData) {
+                            if (sharedData.landPieces) setLandPieces(sharedData.landPieces);
+                            if (sharedData.numberOfPeople) setNumberOfPeople(sharedData.numberOfPeople);
+                            if (sharedData.allDistributions) setAllDistributions(sharedData.allDistributions);
+                            setSuccessMessage('Shared data loaded successfully!');
+                            setTimeout(() => setSuccessMessage(''), 5000);
+                        } else {
+                            setErrorMessage('Could not load shared data. The link may be invalid or expired.');
+                        }
+                    }
+                }, []);
+
+                const addLandPiece = () => {
+                    const newId = Math.max(...landPieces.map(p => p.id), 0) + 1;
+                    setLandPieces([...landPieces, { id: newId, name: '', baseArea: '', factor: '1' }]);
+                };
+
+                const removeLandPiece = (id) => {
+                    if (landPieces.length > 1) {
+                        setLandPieces(landPieces.filter(piece => piece.id !== id));
+                    }
+                };
+
+                const updateLandPiece = (id, field, value) => {
+                    setLandPieces(landPieces.map(piece => 
+                        piece.id === id ? { ...piece, [field]: value } : piece
+                    ));
+                    setErrorMessage('');
+                };
+
+                const calculateFinalArea = (baseArea, factor) => {
+                    const base = parseFloat(baseArea) || 0;
+                    const mult = parseFloat(factor) || 1;
+                    return base * mult;
+                };
+
+                const getDistributionStats = (distribution) => {
+                    const totals = distribution.map(p => p.totalArea);
+                    const maxArea = Math.max(...totals);
+                    const minArea = Math.min(...totals);
+                    const maxDiff = maxArea - minArea;
+                    const percentOfMin = (maxDiff / minArea) * 100;
+                    
+                    return {
+                        maxArea,
+                        minArea,
+                        maxDiff,
+                        percentOfMin
+                    };
+                };
+
+                const isValidDistribution = (distribution) => {
+                    const stats = getDistributionStats(distribution);
+                    return stats.percentOfMin < 5;
+                };
+
+                const generateRandomDistribution = (pieces, numberOfPeople, maxAttempts = 1000) => {
+                    const validPieces = pieces
+                        .map(p => ({
+                            ...p,
+                            finalArea: calculateFinalArea(p.baseArea, p.factor)
+                        }))
+                        .filter(p => p.finalArea > 0);
+
+                    let bestDistribution = null;
+                    let bestStats = null;
+                    let bestMaxDiff = Infinity;
+
+                    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                        const shuffledLand = [...validPieces].sort(() => Math.random() - 0.5);
+                        const allocations = Array.from({ length: numberOfPeople }, () => []);
+                        const totals = Array(numberOfPeople).fill(0);
+                        
+                        for (const landPiece of shuffledLand) {
+                            const minIndex = totals.indexOf(Math.min(...totals));
+                            allocations[minIndex].push(landPiece);
+                            totals[minIndex] += landPiece.finalArea;
+                        }
+                        
+                        const distribution = allocations.map((pieces, i) => ({
+                            personId: i + 1,
+                            landPieces: pieces,
+                            totalArea: totals[i]
+                        }));
+
+                        const stats = getDistributionStats(distribution);
+                        
+                        if (isValidDistribution(distribution)) {
+                            return { distribution, stats, isValid: true };
+                        }
+                        
+                        if (stats.maxDiff < bestMaxDiff) {
+                            bestMaxDiff = stats.maxDiff;
+                            bestDistribution = distribution;
+                            bestStats = stats;
+                        }
+                    }
+
+                    return bestDistribution ? { 
+                        distribution: bestDistribution, 
+                        stats: bestStats,
+                        isValid: false
+                    } : null;
+                };
+
+                const handleDistribute = () => {
+                    try {
+                        const validPieces = landPieces.filter(p => {
+                            const base = parseFloat(p.baseArea);
+                            const factor = parseFloat(p.factor);
+                            return !isNaN(base) && base > 0 && !isNaN(factor) && factor > 0;
+                        });
+                        
+                        const people = parseInt(numberOfPeople);
+
+                        if (validPieces.length === 0) {
+                            setErrorMessage('Please enter at least one valid land piece with positive base area and factor');
+                            setInfoMessage('');
+                            setWarningMessage('');
+                        } else if (isNaN(people) || people <= 0) {
+                            setErrorMessage('Number of inheritors must be a positive number');
+                            setInfoMessage('');
+                            setWarningMessage('');
+                        } else {
+                            const result = generateRandomDistribution(validPieces, people);
+                            
+                            if (result) {
+                                const { distribution, stats, isValid } = result;
+                                
+                                setAllDistributions([...allDistributions, { distribution, stats, isValid }]);
+                                
+                                if (isValid) {
+                                    setInfoMessage(
+                                        `✓ Valid distribution found! Maximum difference is ${stats.percentOfMin.toFixed(2)}% ` +
+                                        `of minimum allocation (${stats.maxDiff.toFixed(2)} units). Click again to find more solutions.`
+                                    );
+                                    setWarningMessage('');
+                                } else {
+                                    setWarningMessage(
+                                        `⚠ Could not find a distribution within 5% tolerance after 1000 attempts. ` +
+                                        `Showing best result with lowest max difference (${stats.maxDiff.toFixed(2)} units, ` +
+                                        `${stats.percentOfMin.toFixed(2)}% of minimum). ` +
+                                        `Try adjusting land sizes or factors for better balance.`
+                                    );
+                                    setInfoMessage('');
+                                }
+                                setErrorMessage('');
+                            } else {
+                                setErrorMessage('Failed to generate distribution. Please try again.');
+                                setInfoMessage('');
+                                setWarningMessage('');
+                            }
+                        }
+                    } catch (e) {
+                        setErrorMessage('Invalid input. Please check your values.');
+                        setInfoMessage('');
+                        setWarningMessage('');
+                    }
+                };
+
+                const handleReset = () => {
+                    setAllDistributions([]);
+                    setErrorMessage('');
+                    setInfoMessage('');
+                    setSuccessMessage('');
+                    setWarningMessage('');
+                };
+
+                const handleSave = () => {
+                    try {
+                        const data = {
+                            landPieces,
+                            numberOfPeople,
+                            allDistributions,
+                            timestamp: new Date().toISOString()
+                        };
+                        
+                        const json = JSON.stringify(data, null, 2);
+                        const blob = new Blob([json], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `land-distribution-${Date.now()}.json`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                        
+                        setSuccessMessage('Data saved successfully! Check your downloads folder.');
+                        setTimeout(() => setSuccessMessage(''), 5000);
+                    } catch (e) {
+                        setErrorMessage('Failed to save data. Please try again.');
+                    }
+                };
+
+                const handleShare = () => {
+                    try {
+                        const data = {
+                            landPieces,
+                            numberOfPeople,
+                            allDistributions
+                        };
+                        
+                        const id = CloudStorage.save(data);
+                        const link = CloudStorage.getShareableLink(id);
+                        setShareLink(link);
+                        setShowShareModal(true);
+                    } catch (e) {
+                        setErrorMessage('Failed to create shareable link. Please try again.');
+                    }
+                };
+
+                const handleCopyLink = () => {
+                    navigator.clipboard.writeText(shareLink).then(() => {
+                        setSuccessMessage('Link copied to clipboard!');
+                        setTimeout(() => setSuccessMessage(''), 3000);
+                    }).catch(() => {
+                        setErrorMessage('Failed to copy link. Please copy it manually.');
+                    });
+                };
+
+                const handleLoad = (event) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            
+                            if (data.landPieces) {
+                                setLandPieces(data.landPieces);
+                            }
+                            if (data.numberOfPeople) {
+                                setNumberOfPeople(data.numberOfPeople);
+                            }
+                            if (data.allDistributions) {
+                                setAllDistributions(data.allDistributions);
+                            }
+                            
+                            setSuccessMessage('Data loaded successfully!');
+                            setTimeout(() => setSuccessMessage(''), 5000);
+                            setErrorMessage('');
+                            setInfoMessage('');
+                            setWarningMessage('');
+                        } catch (err) {
+                            setErrorMessage('Failed to load file. Please make sure it\'s a valid JSON file.');
+                        }
+                    };
+                    reader.readAsText(file);
+                    event.target.value = '';
+                };
+
+                return (
+                    <div className="container">
+                        <h1>Land Distribution Calculator</h1>
+                        <p className="subtitle">Fair and equal distribution of land among inheritors</p>
+
+                        <div className="toolbar">
+                            <button className="btn-toolbar" onClick={handleSave}>
+                                💾 Save to File
+                            </button>
+                            <label className="btn-toolbar load" style={{cursor: 'pointer'}}>
+                                📂 Load from File
+                                <input 
+                                    type="file" 
+                                    accept=".json" 
+                                    onChange={handleLoad}
+                                    className="hidden"
+                                />
+                            </label>
+                            <button className="btn-toolbar share" onClick={handleShare}>
+                                🔗 Share Link
+                            </button>
+                        </div>
+
+                        {showShareModal && (
+                            <div className="share-modal" onClick={() => setShowShareModal(false)}>
+                                <div className="share-modal-content" onClick={(e) => e.stopPropagation()}>
+                                    <div className="share-modal-header">Share Your Data</div>
+                                    <p style={{marginBottom: '15px', color: '#666'}}>
+                                        Copy this link and share it with others. Anyone with this link can view your land distribution data.
+                                    </p>
+                                    <div className="share-link-container">
+                                        <input 
+                                            type="text" 
+                                            value={shareLink} 
+                                            readOnly 
+                                            className="share-link-input"
+                                        />
+                                        <button className="btn-copy" onClick={handleCopyLink}>
+                                            Copy
+                                        </button>
+                                    </div>
+                                    <button className="btn-close" onClick={() => setShowShareModal(false)}>
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="land-pieces-section">
+                            <div className="section-header">
+                                <div className="section-title">Land Pieces</div>
+                            </div>
+
+                            <div className="column-labels">
+                                <div className="column-label">Name</div>
+                                <div className="column-label">Base Area</div>
+                                <div className="column-label">Factor</div>
+                                <div className="column-label">Final Area</div>
+                            </div>
+
+                            {landPieces.map((piece) => (
+                                <div key={piece.id} className="land-piece-row">
+                                    <input
+                                        type="text"
+                                        value={piece.name}
+                                        onChange={(e) => updateLandPiece(piece.id, 'name', e.target.value)}
+                                        placeholder="e.g., North Field"
+                                    />
+                                    <input
+                                        type="number"
+                                        value={piece.baseArea}
+                                        onChange={(e) => updateLandPiece(piece.id, 'baseArea', e.target.value)}
+                                        placeholder="Base area"
+                                        step="0.01"
+                                        min="0"
+                                    />
+                                    <input
+                                        type="number"
+                                        value={piece.factor}
+                                        onChange={(e) => updateLandPiece(piece.id, 'factor', e.target.value)}
+                                        placeholder="Factor"
+                                        step="0.01"
+                                        min="0"
+                                    />
+                                    <div className="computed-area">
+                                        {calculateFinalArea(piece.baseArea, piece.factor).toFixed(2)}
+                                    </div>
+                                    {landPieces.length > 1 && (
+                                        <button 
+                                            className="btn-icon" 
+                                            onClick={() => removeLandPiece(piece.id)}
+                                            title="Remove land piece"
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+
+                            <button className="btn-add" onClick={addLandPiece}>
+                                + Add Land Piece
+                            </button>
+                        </div>
+
+                        <div className="input-section">
+                            <label htmlFor="numberOfPeople">Number of Inheritors</label>
+                            <input
+                                id="numberOfPeople"
+                                type="number"
+                                value={numberOfPeople}
+                                onChange={(e) => {
+                                    setNumberOfPeople(e.target.value);
+                                    setErrorMessage('');
+                                }}
+                                placeholder="e.g., 3"
+                                min="1"
+                            />
+                            <div className="hint">How many people will inherit the land?</div>
+                        </div>
+
+                        {errorMessage && (
+                            <div className="error">
+                                {errorMessage}
+                            </div>
+                        )}
+
+                        {warningMessage && (
+                            <div className="warning">
+                                {warningMessage}
+                            </div>
+                        )}
+
+                        {infoMessage && (
+                            <div className="info">
+                                {infoMessage}
+                            </div>
+                        )}
+
+                        {successMessage && (
+                            <div className="success">
+                                {successMessage}
+                            </div>
+                        )}
+
+                        <div className="button-group">
+                            <button className="btn-primary" onClick={handleDistribute}>
+                                {allDistributions.length === 0 ? 'Find Fair Distribution' : 'Find Another Solution'}
+                            </button>
+                            {allDistributions.length > 0 && (
+                                <button className="btn-secondary" onClick={handleReset}>
+                                    Reset All Solutions
+                                </button>
+                            )}
+                        </div>
+
+                        {allDistributions.length > 0 && (
+                            <div className="results">
+                                <div className="results-header">Distribution Solutions</div>
+                                <div className="results-info">
+                                    Showing {allDistributions.length} distribution{allDistributions.length !== 1 ? 's' : ''}
+                                </div>
+                                
+                                {allDistributions.map(({ distribution, stats, isValid }, solutionIndex) => (
+                                    <div key={solutionIndex} className="solution-container">
+                                        <div className={`solution-number ${!isValid ? 'best-effort' : ''}`}>
+                                            Solution {solutionIndex + 1} {!isValid ? '(Best Effort)' : ''}
+                                        </div>
+                                        
+                                        {distribution.map((person) => (
+                                            <div key={person.personId} className="person-card">
+                                                <div className="person-header">
+                                                    <div className="person-name">
+                                                        Inheritor {person.personId}
+                                                    </div>
+                                                    <div className="person-total">
+                                                        {person.totalArea.toFixed(2)} units
+                                                    </div>
+                                                </div>
+                                                <div className="land-pieces">
+                                                    <div className="land-pieces-label">
+                                                        Land Pieces ({person.landPieces.length}):
+                                                    </div>
+                                                    <div className="pieces-list">
+                                                        {person.landPieces.map((piece, idx) => (
+                                                            <div key={idx} className="piece-item">
+                                                                <div className="piece-name">
+                                                                    {piece.name || `Piece ${piece.id}`}
+                                                                </div>
+                                                                <div className="piece-details">
+                                                                    <div className="piece-calculation">
+                                                                        {parseFloat(piece.baseArea).toFixed(2)} × {parseFloat(piece.factor).toFixed(2)}
+                                                                    </div>
+                                                                    <div className="piece-final">
+                                                                        = {piece.finalArea.toFixed(2)} units
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        <div className={`stats ${!isValid ? 'best-effort' : ''}`}>
+                                            <div className="stats-row">
+                                                <span className="stats-text">Maximum allocation:</span>
+                                                <span className="stats-value">{stats.maxArea.toFixed(2)} units</span>
+                                            </div>
+                                            <div className="stats-row">
+                                                <span className="stats-text">Minimum allocation:</span>
+                                                <span className="stats-value">{stats.minArea.toFixed(2)} units</span>
+                                            </div>
+                                            <div className="stats-row">
+                                                <span className="stats-text">Difference:</span>
+                                                <span className="stats-value">{stats.maxDiff.toFixed(2)} units</span>
+                                            </div>
+                                            <div className="stats-row">
+                                                <span className="stats-text">Difference as % of minimum:</span>
+                                                <span className="stats-value">
+                                                    {stats.percentOfMin.toFixed(2)}% {isValid ? '✓' : '(exceeds 5%)'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<LandDistributionApp />);
+        });
+    </script>
+</body>
+</html>
