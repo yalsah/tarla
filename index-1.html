@@ -89,7 +89,21 @@
             background: #8e44ad;
         }
 
-        .share-modal {
+        .btn-toolbar.cloud-load {
+            background: #e67e22;
+        }
+
+        .btn-toolbar.cloud-load:hover {
+            background: #d35400;
+        }
+
+        .btn-toolbar:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .modal {
             position: fixed;
             top: 0;
             left: 0;
@@ -102,38 +116,104 @@
             z-index: 1000;
         }
 
-        .share-modal-content {
+        .modal-content {
             background: white;
             padding: 30px;
             border-radius: 15px;
-            max-width: 500px;
+            max-width: 600px;
             width: 90%;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-height: 80vh;
+            overflow-y: auto;
         }
 
-        .share-modal-header {
+        .modal-header {
             font-size: 1.5em;
             font-weight: 700;
             margin-bottom: 20px;
             color: #333;
         }
 
-        .share-link-container {
-            display: flex;
-            gap: 10px;
+        .modal-input-container {
             margin-bottom: 20px;
         }
 
-        .share-link-input {
-            flex: 1;
+        .modal-input, .modal-textarea {
+            width: 100%;
             padding: 12px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
-            font-size: 0.9em;
+            font-size: 0.95em;
             font-family: monospace;
         }
 
+        .modal-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .modal-input:focus, .modal-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-modal-primary {
+            flex: 1;
+            padding: 12px 20px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-modal-primary:hover {
+            background: #229954;
+        }
+
+        .btn-modal-primary:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .btn-modal-secondary {
+            flex: 1;
+            padding: 12px 20px;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-modal-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .share-link-container {
+            margin-bottom: 20px;
+        }
+
+        .share-code-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            font-family: monospace;
+            font-size: 0.9em;
+            word-break: break-all;
+            margin-bottom: 15px;
+        }
+
         .btn-copy {
+            width: 100%;
             padding: 12px 20px;
             background: #27ae60;
             color: white;
@@ -145,21 +225,6 @@
 
         .btn-copy:hover {
             background: #229954;
-        }
-
-        .btn-close {
-            width: 100%;
-            padding: 12px;
-            background: #95a5a6;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        .btn-close:hover {
-            background: #7f8c8d;
         }
 
         .input-section {
@@ -632,41 +697,119 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <script type="text/babel">
-        window.addEventListener('load', function() {
-            document.getElementById('loading').style.display = 'none';
-            
-            const { useState, useEffect } = React;
+        try {
+            console.log('Script starting...');
+            window.addEventListener('load', function() {
+                try {
+                    console.log('Window loaded');
+                    document.getElementById('loading').style.display = 'none';
+                    console.log('Loading hidden');
+                    
+                    const { useState, useEffect } = React;
+                    console.log('React hooks imported');
 
-            // Simple cloud storage using browser's localStorage with sync capability
-            const CloudStorage = {
-                generateId: () => {
-                    return 'ld-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                    // Cloud storage with persistent key
+                    const CloudStorage = {
+                // Get or create a unique key for this browser/device
+                getStorageKey: () => {
+                    let key = localStorage.getItem('land_distribution_cloud_key');
+                    if (!key) {
+                        // Generate a unique key for this device
+                        key = 'ld_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                        localStorage.setItem('land_distribution_cloud_key', key);
+                    }
+                    return key;
                 },
                 
-                save: (data) => {
-                    const id = CloudStorage.generateId();
-                    const storageData = {
-                        ...data,
-                        id,
-                        lastModified: new Date().toISOString()
-                    };
-                    localStorage.setItem(id, JSON.stringify(storageData));
-                    return id;
+                encodeData: (data) => {
+                    const json = JSON.stringify(data);
+                    return btoa(unescape(encodeURIComponent(json)));
                 },
                 
-                load: (id) => {
-                    const data = localStorage.getItem(id);
-                    return data ? JSON.parse(data) : null;
+                decodeData: (encodedData) => {
+                    try {
+                        const json = decodeURIComponent(escape(atob(encodedData)));
+                        return JSON.parse(json);
+                    } catch (e) {
+                        throw new Error('Invalid data format');
+                    }
                 },
                 
-                getShareableLink: (id) => {
+                getShareableLink: (encodedData) => {
                     const baseUrl = window.location.href.split('?')[0];
-                    return `${baseUrl}?share=${id}`;
+                    return `${baseUrl}?data=${encodedData}`;
                 },
                 
-                getIdFromUrl: () => {
+                getDataFromUrl: () => {
                     const params = new URLSearchParams(window.location.search);
-                    return params.get('share');
+                    return params.get('data');
+                },
+                
+                // Cloud storage using dpaste.com with persistent key
+                saveToCloud: async (data) => {
+                    try {
+                        const storageKey = CloudStorage.getStorageKey();
+                        const dataWithKey = {
+                            ...data,
+                            storageKey: storageKey,
+                            timestamp: new Date().toISOString()
+                        };
+                        
+                        const json = JSON.stringify(dataWithKey, null, 2);
+                        
+                        const formData = new FormData();
+                        formData.append('content', json);
+                        formData.append('syntax', 'json');
+                        formData.append('expiry_days', '365');
+                        formData.append('title', `Land Distribution - ${storageKey}`);
+                        
+                        const response = await fetch('https://dpaste.com/api/v2/', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Failed to save to cloud');
+                        }
+                        
+                        const url = await response.text();
+                        const cleanUrl = url.trim() + '.txt';
+                        
+                        // Store the cloud URL in localStorage for this key
+                        localStorage.setItem('land_distribution_cloud_url', cleanUrl);
+                        
+                        return cleanUrl;
+                    } catch (error) {
+                        console.error('Cloud save error:', error);
+                        throw error;
+                    }
+                },
+                
+                loadFromCloud: async () => {
+                    try {
+                        // Get the stored cloud URL
+                        const url = localStorage.getItem('land_distribution_cloud_url');
+                        
+                        if (!url) {
+                            throw new Error('No saved data found. Please save to cloud first.');
+                        }
+                        
+                        const response = await fetch(url);
+                        
+                        if (!response.ok) {
+                            throw new Error('Failed to load from cloud. The data may have expired.');
+                        }
+                        
+                        const json = await response.text();
+                        return JSON.parse(json);
+                    } catch (error) {
+                        console.error('Cloud load error:', error);
+                        throw error;
+                    }
+                },
+                
+                hasCloudData: () => {
+                    return !!localStorage.getItem('land_distribution_cloud_url');
                 }
             };
 
@@ -681,21 +824,26 @@
                 const [successMessage, setSuccessMessage] = useState('');
                 const [warningMessage, setWarningMessage] = useState('');
                 const [showShareModal, setShowShareModal] = useState(false);
+                const [showLoadModal, setShowLoadModal] = useState(false);
                 const [shareLink, setShareLink] = useState('');
+                const [shareCode, setShareCode] = useState('');
+                const [loadCodeInput, setLoadCodeInput] = useState('');
+                const [isSavingToCloud, setIsSavingToCloud] = useState(false);
+                const [isLoadingFromCloud, setIsLoadingFromCloud] = useState(false);
 
                 // Load shared data on mount
                 useEffect(() => {
-                    const sharedId = CloudStorage.getIdFromUrl();
-                    if (sharedId) {
-                        const sharedData = CloudStorage.load(sharedId);
-                        if (sharedData) {
+                    const encodedData = CloudStorage.getDataFromUrl();
+                    if (encodedData) {
+                        try {
+                            const sharedData = CloudStorage.decodeData(encodedData);
                             if (sharedData.landPieces) setLandPieces(sharedData.landPieces);
                             if (sharedData.numberOfPeople) setNumberOfPeople(sharedData.numberOfPeople);
                             if (sharedData.allDistributions) setAllDistributions(sharedData.allDistributions);
                             setSuccessMessage('Shared data loaded successfully!');
                             setTimeout(() => setSuccessMessage(''), 5000);
-                        } else {
-                            setErrorMessage('Could not load shared data. The link may be invalid or expired.');
+                        } catch (error) {
+                            setErrorMessage('Could not load shared data. The link may be invalid.');
                         }
                     }
                 }, []);
@@ -744,7 +892,30 @@
                     return stats.percentOfMin < 5;
                 };
 
-                const generateRandomDistribution = (pieces, numberOfPeople, maxAttempts = 1000) => {
+                const isAcceptableDistribution = (distribution) => {
+                    const stats = getDistributionStats(distribution);
+                    return stats.percentOfMin < 10;
+                };
+
+                // Check if this combination already exists in previous distributions
+                const isDuplicateCombination = (newDistribution, existingDistributions) => {
+                    // Create a signature for each distribution based on which pieces each person gets
+                    const createSignature = (dist) => {
+                        return dist.map(person => {
+                            // Sort piece IDs to normalize the combination
+                            return person.landPieces.map(p => p.id).sort((a, b) => a - b).join(',');
+                        }).sort().join('|'); // Sort person combinations to ignore person assignment order
+                    };
+
+                    const newSig = createSignature(newDistribution);
+                    
+                    return existingDistributions.some(({ distribution }) => {
+                        const existingSig = createSignature(distribution);
+                        return newSig === existingSig;
+                    });
+                };
+
+                const generateRandomDistribution = (pieces, numberOfPeople, existingDistributions, maxAttempts = 5000) => {
                     const validPieces = pieces
                         .map(p => ({
                             ...p,
@@ -773,24 +944,38 @@
                             totalArea: totals[i]
                         }));
 
+                        // Skip if this combination already exists
+                        if (isDuplicateCombination(distribution, existingDistributions)) {
+                            continue;
+                        }
+
                         const stats = getDistributionStats(distribution);
                         
+                        // First priority: valid distribution (< 5%)
                         if (isValidDistribution(distribution)) {
                             return { distribution, stats, isValid: true };
                         }
                         
-                        if (stats.maxDiff < bestMaxDiff) {
-                            bestMaxDiff = stats.maxDiff;
-                            bestDistribution = distribution;
-                            bestStats = stats;
+                        // Second priority: acceptable distribution (< 10%)
+                        if (isAcceptableDistribution(distribution)) {
+                            if (stats.maxDiff < bestMaxDiff) {
+                                bestMaxDiff = stats.maxDiff;
+                                bestDistribution = distribution;
+                                bestStats = stats;
+                            }
                         }
                     }
 
-                    return bestDistribution ? { 
-                        distribution: bestDistribution, 
-                        stats: bestStats,
-                        isValid: false
-                    } : null;
+                    // Return best found if it's acceptable (< 10%), otherwise return best overall
+                    if (bestDistribution && isAcceptableDistribution(bestDistribution)) {
+                        return { 
+                            distribution: bestDistribution, 
+                            stats: bestStats,
+                            isValid: false
+                        };
+                    }
+
+                    return null;
                 };
 
                 const handleDistribute = () => {
@@ -812,7 +997,7 @@
                             setInfoMessage('');
                             setWarningMessage('');
                         } else {
-                            const result = generateRandomDistribution(validPieces, people);
+                            const result = generateRandomDistribution(validPieces, people, allDistributions);
                             
                             if (result) {
                                 const { distribution, stats, isValid } = result;
@@ -822,23 +1007,32 @@
                                 if (isValid) {
                                     setInfoMessage(
                                         `✓ Valid distribution found! Maximum difference is ${stats.percentOfMin.toFixed(2)}% ` +
-                                        `of minimum allocation (${stats.maxDiff.toFixed(2)} units). Click again to find more solutions.`
+                                        `of minimum allocation (${stats.maxDiff.toFixed(2)} units). Click again to find more unique solutions.`
                                     );
                                     setWarningMessage('');
+                                } else if (stats.percentOfMin < 10) {
+                                    setWarningMessage(
+                                        `⚠ Found unique distribution with ${stats.percentOfMin.toFixed(2)}% difference ` +
+                                        `(max difference: ${stats.maxDiff.toFixed(2)} units). This exceeds the 5% target but is within 10% tolerance. ` +
+                                        `Try adjusting land sizes or factors for better balance.`
+                                    );
+                                    setInfoMessage('');
                                 } else {
                                     setWarningMessage(
-                                        `⚠ Could not find a distribution within 5% tolerance after 1000 attempts. ` +
-                                        `Showing best result with lowest max difference (${stats.maxDiff.toFixed(2)} units, ` +
-                                        `${stats.percentOfMin.toFixed(2)}% of minimum). ` +
-                                        `Try adjusting land sizes or factors for better balance.`
+                                        `⚠ Could not find a unique distribution within 10% tolerance after 5000 attempts. ` +
+                                        `Best result: ${stats.percentOfMin.toFixed(2)}% of minimum (${stats.maxDiff.toFixed(2)} units). ` +
+                                        `All possible unique combinations may have been exhausted.`
                                     );
                                     setInfoMessage('');
                                 }
                                 setErrorMessage('');
                             } else {
-                                setErrorMessage('Failed to generate distribution. Please try again.');
+                                setWarningMessage(
+                                    '⚠ No more unique distributions found within 10% tolerance. ' +
+                                    'All possible combinations may have been exhausted. Try resetting to start fresh or adjust your land pieces.'
+                                );
+                                setErrorMessage('');
                                 setInfoMessage('');
-                                setWarningMessage('');
                             }
                         }
                     } catch (e) {
@@ -891,12 +1085,97 @@
                             allDistributions
                         };
                         
-                        const id = CloudStorage.save(data);
-                        const link = CloudStorage.getShareableLink(id);
+                        const encoded = CloudStorage.encodeData(data);
+                        const link = CloudStorage.getShareableLink(encoded);
+                        
+                        setShareCode(encoded);
                         setShareLink(link);
                         setShowShareModal(true);
+                        setSuccessMessage('Share code generated successfully!');
+                        setTimeout(() => setSuccessMessage(''), 3000);
                     } catch (e) {
-                        setErrorMessage('Failed to create shareable link. Please try again.');
+                        setErrorMessage('Failed to create share code: ' + e.message);
+                    }
+                };
+
+                const handleShowLoadModal = () => {
+                    setShowLoadModal(true);
+                    setLoadCodeInput('');
+                };
+
+                const handleLoadFromCloud = () => {
+                    try {
+                        let code = loadCodeInput.trim();
+                        
+                        // Extract code from URL if a full URL was pasted
+                        if (code.includes('?data=')) {
+                            const params = new URLSearchParams(code.split('?')[1]);
+                            code = params.get('data');
+                        }
+                        
+                        if (!code) {
+                            throw new Error('No code provided');
+                        }
+                        
+                        const cloudData = CloudStorage.decodeData(code);
+                        
+                        if (cloudData) {
+                            if (cloudData.landPieces) setLandPieces(cloudData.landPieces);
+                            if (cloudData.numberOfPeople) setNumberOfPeople(cloudData.numberOfPeople);
+                            if (cloudData.allDistributions) setAllDistributions(cloudData.allDistributions);
+                            
+                            setSuccessMessage('Data loaded successfully!');
+                            setTimeout(() => setSuccessMessage(''), 5000);
+                            setShowLoadModal(false);
+                            setLoadCodeInput('');
+                            setErrorMessage('');
+                        }
+                    } catch (e) {
+                        setErrorMessage('Failed to load data: ' + e.message + '. Please check the code and try again.');
+                    }
+                };
+
+                const handleSaveToCloud = async () => {
+                    setIsSavingToCloud(true);
+                    try {
+                        const data = {
+                            landPieces,
+                            numberOfPeople,
+                            allDistributions
+                        };
+                        
+                        const url = await CloudStorage.saveToCloud(data);
+                        setSuccessMessage('✅ Data saved to cloud! You can now load it from any device using "Load from Cloud".');
+                        setTimeout(() => setSuccessMessage(''), 5000);
+                    } catch (e) {
+                        setErrorMessage('Failed to save to cloud: ' + e.message + '. Please try again.');
+                    } finally {
+                        setIsSavingToCloud(false);
+                    }
+                };
+
+                const handleLoadFromCloudStorage = async () => {
+                    setIsLoadingFromCloud(true);
+                    try {
+                        if (!CloudStorage.hasCloudData()) {
+                            throw new Error('No cloud data found. Please save to cloud first.');
+                        }
+                        
+                        const cloudData = await CloudStorage.loadFromCloud();
+                        
+                        if (cloudData) {
+                            if (cloudData.landPieces) setLandPieces(cloudData.landPieces);
+                            if (cloudData.numberOfPeople) setNumberOfPeople(cloudData.numberOfPeople);
+                            if (cloudData.allDistributions) setAllDistributions(cloudData.allDistributions);
+                            
+                            setSuccessMessage('✅ Data loaded from cloud successfully!');
+                            setTimeout(() => setSuccessMessage(''), 5000);
+                            setErrorMessage('');
+                        }
+                    } catch (e) {
+                        setErrorMessage('Failed to load from cloud: ' + e.message);
+                    } finally {
+                        setIsLoadingFromCloud(false);
                     }
                 };
 
@@ -909,7 +1188,16 @@
                     });
                 };
 
-                const handleLoad = (event) => {
+                const handleCopyCode = () => {
+                    navigator.clipboard.writeText(shareCode).then(() => {
+                        setSuccessMessage('Code copied to clipboard!');
+                        setTimeout(() => setSuccessMessage(''), 3000);
+                    }).catch(() => {
+                        setErrorMessage('Failed to copy code. Please copy it manually.');
+                    });
+                };
+
+                const handleFileLoad = (event) => {
                     const file = event.target.files[0];
                     if (!file) return;
                     
@@ -955,36 +1243,105 @@
                                 <input 
                                     type="file" 
                                     accept=".json" 
-                                    onChange={handleLoad}
+                                    onChange={handleFileLoad}
                                     className="hidden"
                                 />
                             </label>
-                            <button className="btn-toolbar share" onClick={handleShare}>
-                                🔗 Share Link
+                            <button 
+                                className="btn-toolbar share" 
+                                onClick={handleShare}
+                            >
+                                🔗 Generate Share Code
+                            </button>
+                            <button 
+                                className="btn-toolbar cloud-load" 
+                                onClick={handleShowLoadModal}
+                            >
+                                📥 Load from Code
+                            </button>
+                            <button 
+                                className="btn-toolbar" 
+                                onClick={handleSaveToCloud}
+                                disabled={isSavingToCloud}
+                                style={{background: '#e74c3c'}}
+                            >
+                                {isSavingToCloud ? '⏳ Saving...' : '☁️ Save to Cloud'}
+                            </button>
+                            <button 
+                                className="btn-toolbar"
+                                onClick={handleLoadFromCloudStorage}
+                                disabled={isLoadingFromCloud}
+                                style={{background: '#16a085'}}
+                            >
+                                {isLoadingFromCloud ? '⏳ Loading...' : '📤 Load from Cloud'}
                             </button>
                         </div>
 
                         {showShareModal && (
-                            <div className="share-modal" onClick={() => setShowShareModal(false)}>
-                                <div className="share-modal-content" onClick={(e) => e.stopPropagation()}>
-                                    <div className="share-modal-header">Share Your Data</div>
+                            <div className="modal" onClick={() => setShowShareModal(false)}>
+                                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                                    <div className="modal-header">Share Your Data</div>
                                     <p style={{marginBottom: '15px', color: '#666'}}>
-                                        Copy this link and share it with others. Anyone with this link can view your land distribution data.
+                                        ✅ Share code generated! You can share either the link OR the code below:
                                     </p>
-                                    <div className="share-link-container">
-                                        <input 
-                                            type="text" 
-                                            value={shareLink} 
-                                            readOnly 
-                                            className="share-link-input"
-                                        />
+                                    
+                                    <div style={{marginBottom: '20px'}}>
+                                        <strong style={{display: 'block', marginBottom: '10px'}}>Option 1: Share Link</strong>
+                                        <div className="share-code-box" style={{marginBottom: '10px'}}>
+                                            {shareLink}
+                                        </div>
                                         <button className="btn-copy" onClick={handleCopyLink}>
-                                            Copy
+                                            Copy Link
                                         </button>
                                     </div>
-                                    <button className="btn-close" onClick={() => setShowShareModal(false)}>
+                                    
+                                    <div style={{marginBottom: '20px'}}>
+                                        <strong style={{display: 'block', marginBottom: '10px'}}>Option 2: Share Code</strong>
+                                        <div className="share-code-box" style={{marginBottom: '10px', maxHeight: '150px', overflow: 'auto'}}>
+                                            {shareCode}
+                                        </div>
+                                        <button className="btn-copy" onClick={handleCopyCode}>
+                                            Copy Code
+                                        </button>
+                                    </div>
+                                    
+                                    <button className="btn-modal-secondary" onClick={() => setShowShareModal(false)}>
                                         Close
                                     </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {showLoadModal && (
+                            <div className="modal" onClick={() => setShowLoadModal(false)}>
+                                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                                    <div className="modal-header">Load from Share Code</div>
+                                    <p style={{marginBottom: '15px', color: '#666'}}>
+                                        Paste the share link OR share code:
+                                    </p>
+                                    <div className="modal-input-container">
+                                        <textarea 
+                                            value={loadCodeInput}
+                                            onChange={(e) => setLoadCodeInput(e.target.value)}
+                                            placeholder="Paste link or code here..."
+                                            className="modal-textarea"
+                                        />
+                                    </div>
+                                    <div className="modal-buttons">
+                                        <button 
+                                            className="btn-modal-primary" 
+                                            onClick={handleLoadFromCloud}
+                                            disabled={!loadCodeInput.trim()}
+                                        >
+                                            Load Data
+                                        </button>
+                                        <button 
+                                            className="btn-modal-secondary" 
+                                            onClick={() => setShowLoadModal(false)}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -1115,8 +1472,21 @@
                                                     <div className="person-name">
                                                         Inheritor {person.personId}
                                                     </div>
-                                                    <div className="person-total">
-                                                        {person.totalArea.toFixed(2)} units
+                                                    <div style={{display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap'}}>
+                                                        <div style={{textAlign: 'right'}}>
+                                                            <div style={{fontSize: '0.8em', color: '#666', marginBottom: '4px'}}>
+                                                                Base Total
+                                                            </div>
+                                                            <div style={{fontSize: '1.1em', fontWeight: '600', color: '#95a5a6'}}>
+                                                                {person.landPieces.reduce((sum, piece) => sum + parseFloat(piece.baseArea), 0).toFixed(2)} units
+                                                            </div>
+                                                        </div>
+                                                        <div className="person-total">
+                                                            <div style={{fontSize: '0.7em', marginBottom: '2px', opacity: '0.8'}}>
+                                                                Factored Total
+                                                            </div>
+                                                            {person.totalArea.toFixed(2)} units
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="land-pieces">
@@ -1173,8 +1543,18 @@
             }
 
             const root = ReactDOM.createRoot(document.getElementById('root'));
+            console.log('Root created');
             root.render(<LandDistributionApp />);
-        });
+            console.log('App rendered');
+                } catch (innerError) {
+                    console.error('Inner error:', innerError);
+                    document.getElementById('root').innerHTML = '<div style="color: red; padding: 20px;">Error: ' + innerError.message + '</div>';
+                }
+            });
+        } catch (outerError) {
+            console.error('Outer error:', outerError);
+            document.getElementById('root').innerHTML = '<div style="color: red; padding: 20px;">Error: ' + outerError.message + '</div>';
+        }
     </script>
 </body>
 </html>
