@@ -697,115 +697,139 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <script type="text/babel">
-        window.addEventListener('load', function() {
-            document.getElementById('loading').style.display = 'none';
-            
-            const { useState, useEffect } = React;
+        try {
+            console.log('Script starting...');
+            window.addEventListener('load', function() {
+                try {
+                    console.log('Window loaded');
+                    document.getElementById('loading').style.display = 'none';
+                    console.log('Loading hidden');
+                    
+                    const { useState, useEffect } = React;
+                    console.log('React hooks imported');
 
-            // Cloud storage with persistent key
-            const CloudStorage = {
-                // Get or create a unique key for this browser/device
-                getStorageKey: () => {
-                    let key = localStorage.getItem('land_distribution_cloud_key');
-                    if (!key) {
-                        // Generate a unique key for this device
-                        key = 'ld_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                        localStorage.setItem('land_distribution_cloud_key', key);
-                    }
-                    return key;
-                },
-                
-                encodeData: (data) => {
-                    const json = JSON.stringify(data);
-                    return btoa(unescape(encodeURIComponent(json)));
-                },
-                
-                decodeData: (encodedData) => {
-                    try {
-                        const json = decodeURIComponent(escape(atob(encodedData)));
-                        return JSON.parse(json);
-                    } catch (e) {
-                        throw new Error('Invalid data format');
-                    }
-                },
-                
-                getShareableLink: (encodedData) => {
-                    const baseUrl = window.location.href.split('?')[0];
-                    return `${baseUrl}?data=${encodedData}`;
-                },
-                
-                getDataFromUrl: () => {
-                    const params = new URLSearchParams(window.location.search);
-                    return params.get('data');
-                },
-                
-                // Cloud storage using dpaste.com with persistent key
-                saveToCloud: async (data) => {
-                    try {
-                        const storageKey = CloudStorage.getStorageKey();
-                        const dataWithKey = {
-                            ...data,
-                            storageKey: storageKey,
-                            timestamp: new Date().toISOString()
-                        };
+                    // Cloud storage with fixed URL - no setup, no copying, works everywhere
+                    const CloudStorage = {
+                        // This is your unique identifier - change this to something unique to you
+                        FIXED_KEY: 'my_land_distribution_2026',
                         
-                        const json = JSON.stringify(dataWithKey, null, 2);
+                        // Using Rentry.co API with fixed URL
+                        getFixedUrl: () => {
+                            // Create a consistent URL based on FIXED_KEY
+                            return `https://rentry.co/${CloudStorage.FIXED_KEY}`;
+                        },
                         
-                        const formData = new FormData();
-                        formData.append('content', json);
-                        formData.append('syntax', 'json');
-                        formData.append('expiry_days', '365');
-                        formData.append('title', `Land Distribution - ${storageKey}`);
+                        getEditCode: () => {
+                            // Store edit code in localStorage
+                            return localStorage.getItem('rentry_edit_code_' + CloudStorage.FIXED_KEY);
+                        },
                         
-                        const response = await fetch('https://dpaste.com/api/v2/', {
-                            method: 'POST',
-                            body: formData
-                        });
+                        saveEditCode: (code) => {
+                            localStorage.setItem('rentry_edit_code_' + CloudStorage.FIXED_KEY, code);
+                        },
                         
-                        if (!response.ok) {
-                            throw new Error('Failed to save to cloud');
+                        encodeData: (data) => {
+                            const json = JSON.stringify(data);
+                            return btoa(unescape(encodeURIComponent(json)));
+                        },
+                        
+                        decodeData: (encodedData) => {
+                            try {
+                                const json = decodeURIComponent(escape(atob(encodedData)));
+                                return JSON.parse(json);
+                            } catch (e) {
+                                throw new Error('Invalid data format');
+                            }
+                        },
+                        
+                        getShareableLink: (encodedData) => {
+                            const baseUrl = window.location.href.split('?')[0];
+                            return `${baseUrl}?data=${encodedData}`;
+                        },
+                        
+                        getDataFromUrl: () => {
+                            const params = new URLSearchParams(window.location.search);
+                            return params.get('data');
+                        },
+                        
+                        // Save to cloud with fixed URL
+                        saveToCloud: async (data) => {
+                            try {
+                                const dataToSave = {
+                                    ...data,
+                                    storageKey: CloudStorage.FIXED_KEY,
+                                    timestamp: new Date().toISOString()
+                                };
+                                
+                                const jsonData = JSON.stringify(dataToSave, null, 2);
+                                const editCode = CloudStorage.getEditCode();
+                                
+                                const formData = new FormData();
+                                formData.append('url', CloudStorage.FIXED_KEY);
+                                formData.append('text', jsonData);
+                                
+                                if (editCode) {
+                                    formData.append('edit_code', editCode);
+                                }
+                                
+                                const response = await fetch('https://rentry.co/api/new', {
+                                    method: 'POST',
+                                    body: formData
+                                });
+                                
+                                if (!response.ok) {
+                                    throw new Error('Failed to save to cloud');
+                                }
+                                
+                                const result = await response.json();
+                                
+                                if (result.status === '200') {
+                                    // Save edit code for future updates
+                                    if (result.edit_code) {
+                                        CloudStorage.saveEditCode(result.edit_code);
+                                    }
+                                    return CloudStorage.getFixedUrl();
+                                } else {
+                                    throw new Error(result.content || 'Failed to save');
+                                }
+                            } catch (error) {
+                                console.error('Cloud save error:', error);
+                                throw error;
+                            }
+                        },
+                        
+                        // Load from cloud using fixed URL
+                        loadFromCloud: async () => {
+                            try {
+                                const url = `https://rentry.co/${CloudStorage.FIXED_KEY}/raw`;
+                                
+                                const response = await fetch(url);
+                                
+                                if (!response.ok) {
+                                    if (response.status === 404) {
+                                        throw new Error('No data found in cloud. Please save first.');
+                                    }
+                                    throw new Error('Failed to load from cloud');
+                                }
+                                
+                                const jsonText = await response.text();
+                                return JSON.parse(jsonText);
+                            } catch (error) {
+                                console.error('Cloud load error:', error);
+                                throw error;
+                            }
+                        },
+                        
+                        hasCloudData: async () => {
+                            try {
+                                const url = `https://rentry.co/${CloudStorage.FIXED_KEY}/raw`;
+                                const response = await fetch(url, { method: 'HEAD' });
+                                return response.ok;
+                            } catch {
+                                return false;
+                            }
                         }
-                        
-                        const url = await response.text();
-                        const cleanUrl = url.trim() + '.txt';
-                        
-                        // Store the cloud URL in localStorage for this key
-                        localStorage.setItem('land_distribution_cloud_url', cleanUrl);
-                        
-                        return cleanUrl;
-                    } catch (error) {
-                        console.error('Cloud save error:', error);
-                        throw error;
-                    }
-                },
-                
-                loadFromCloud: async () => {
-                    try {
-                        // Get the stored cloud URL
-                        const url = localStorage.getItem('land_distribution_cloud_url');
-                        
-                        if (!url) {
-                            throw new Error('No saved data found. Please save to cloud first.');
-                        }
-                        
-                        const response = await fetch(url);
-                        
-                        if (!response.ok) {
-                            throw new Error('Failed to load from cloud. The data may have expired.');
-                        }
-                        
-                        const json = await response.text();
-                        return JSON.parse(json);
-                    } catch (error) {
-                        console.error('Cloud load error:', error);
-                        throw error;
-                    }
-                },
-                
-                hasCloudData: () => {
-                    return !!localStorage.getItem('land_distribution_cloud_url');
-                }
-            };
+                    };
 
             function LandDistributionApp() {
                 const [landPieces, setLandPieces] = useState([
@@ -1138,8 +1162,8 @@
                             allDistributions
                         };
                         
-                        const url = await CloudStorage.saveToCloud(data);
-                        setSuccessMessage('✅ Data saved to cloud! You can now load it from any device using "Load from Cloud".');
+                        await CloudStorage.saveToCloud(data);
+                        setSuccessMessage('✅ Data saved to cloud! Anyone can now load it from any device - no setup needed!');
                         setTimeout(() => setSuccessMessage(''), 5000);
                     } catch (e) {
                         setErrorMessage('Failed to save to cloud: ' + e.message + '. Please try again.');
@@ -1151,10 +1175,6 @@
                 const handleLoadFromCloudStorage = async () => {
                     setIsLoadingFromCloud(true);
                     try {
-                        if (!CloudStorage.hasCloudData()) {
-                            throw new Error('No cloud data found. Please save to cloud first.');
-                        }
-                        
                         const cloudData = await CloudStorage.loadFromCloud();
                         
                         if (cloudData) {
@@ -1537,8 +1557,18 @@
             }
 
             const root = ReactDOM.createRoot(document.getElementById('root'));
+            console.log('Root created');
             root.render(<LandDistributionApp />);
-        });
+            console.log('App rendered');
+                } catch (innerError) {
+                    console.error('Inner error:', innerError);
+                    document.getElementById('root').innerHTML = '<div style="color: red; padding: 20px;">Error: ' + innerError.message + '</div>';
+                }
+            });
+        } catch (outerError) {
+            console.error('Outer error:', outerError);
+            document.getElementById('root').innerHTML = '<div style="color: red; padding: 20px;">Error: ' + outerError.message + '</div>';
+        }
     </script>
 </body>
 </html>
