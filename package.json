@@ -1,5 +1,5 @@
 {
-  "name": "land-distribution-backend",
+  "name": "tarla",
   "version": "1.0.0",
   "description": "Simple cloud storage backend for Land Distribution App",
   "main": "api/storage.js",
