@@ -1,6 +1,6 @@
 # Land Distribution Backend - Deployment Guide
 
-This is a simple serverless backend for your Land Distribution App. It provides a fixed URL for cloud storage with no setup required on the frontend.
+This is a simple serverless backend for your Land Distribution App. It provides a fixed URL for cloud storage with no setup required on the frontend. 
 
 ## Quick Deploy to Vercel (FREE - 5 minutes)
 
