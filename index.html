@@ -712,7 +712,7 @@
                     const CloudStorage = {
                         // Configuration
                         FIXED_KEY: 'my_land_distribution_2026', // Change this to something unique
-                        API_URL: 'YOUR_VERCEL_URL_HERE', // Replace with your Vercel URL after deployment
+                        API_URL: 'https://tarla-rose.vercel.app', // Replace with your Vercel URL after deployment
                         
                         encodeData: (data) => {
                             const json = JSON.stringify(data);
@@ -1100,7 +1100,7 @@
                         const url = URL.createObjectURL(blob);
                         const link = document.createElement('a');
                         link.href = url;
-                        link.download = `land-distribution-${Date.now()}.json`;
+                        link.download = `tarla-${Date.now()}.json`;
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
