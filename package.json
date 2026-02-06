@@ -1,7 +1,7 @@
 {
-  "name": "tarla",
+  "name": "land-distribution-backend",
   "version": "1.0.0",
-  "description": "Simple cloud storage backend for Land Distribution App",
+  "description": "Persistent cloud storage backend using JSONBin.io",
   "main": "api/storage.js",
   "scripts": {
     "dev": "vercel dev"
