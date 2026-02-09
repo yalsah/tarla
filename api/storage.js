@@ -32,18 +32,24 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      // Load from Supabase
-      const { data: result, error } = await supabase
+      // Load from Supabase - get the most recent one if multiple exist
+      const { data: results, error } = await supabase
         .from('land_storage')
         .select('data')
         .eq('key', key)
-        .single();
+        .order('updated_at', { ascending: false })
+        .limit(1);
 
-      if (error || !result) {
+      if (error) {
+        console.error('Supabase error:', error);
+        return res.status(500).json({ error: 'Database error', details: error.message });
+      }
+
+      if (!results || results.length === 0) {
         return res.status(404).json({ error: 'No data found for this key' });
       }
 
-      return res.status(200).json({ key, data: result.data });
+      return res.status(200).json({ key, data: results[0].data });
     }
 
     if (req.method === 'POST') {
@@ -51,17 +57,41 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Data is required' });
       }
 
-      // Save to Supabase (upsert = insert or update)
-      const { error } = await supabase
+      // Check if key already exists
+      const { data: existing } = await supabase
         .from('land_storage')
-        .upsert({ 
-          key: key, 
-          data: data,
-          updated_at: new Date().toISOString()
-        });
+        .select('id')
+        .eq('key', key)
+        .limit(1);
 
-      if (error) {
-        throw new Error(error.message);
+      if (existing && existing.length > 0) {
+        // Update existing record
+        const { error } = await supabase
+          .from('land_storage')
+          .update({ 
+            data: data,
+            updated_at: new Date().toISOString()
+          })
+          .eq('key', key);
+
+        if (error) {
+          console.error('Supabase update error:', error);
+          throw new Error(error.message);
+        }
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('land_storage')
+          .insert({ 
+            key: key, 
+            data: data,
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) {
+          console.error('Supabase insert error:', error);
+          throw new Error(error.message);
+        }
       }
 
       return res.status(200).json({ 
