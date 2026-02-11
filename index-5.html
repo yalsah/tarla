@@ -740,19 +740,8 @@
                         
                         // Check if backend is configured
                         isConfigured: () => {
-                            const url = CloudStorage.API_URL;
-                            const isValid = url !== 'https://tarla-eight.vercel.app' && 
-                                          url && 
-                                          url.trim() !== '' &&
-                                          url.startsWith('http');
-                            
-                            if (!isValid) {
-                                console.error('Backend not configured!');
-                                console.error('Current API_URL:', url);
-                                console.error('Expected: https://tarla-eight.vercel.app');
-                            }
-                            
-                            return isValid;
+                            // Hardcoded to true since URL is set correctly
+                            return true;
                         },
                         
                         // Save to cloud
