@@ -712,7 +712,7 @@
                     const CloudStorage = {
                         // Configuration
                         FIXED_KEY: 'my_land_distribution_2026', // Change this to something unique
-                        API_URL: 'https://tarla-eight.vercel.app', // Your Vercel URL
+                        API_URL: 'https://tarla-eight.vercel.app', // Replace with your Vercel URL after deployment
                         
                         encodeData: (data) => {
                             const json = JSON.stringify(data);
@@ -740,22 +740,20 @@
                         
                         // Check if backend is configured
                         isConfigured: () => {
-                            // Hardcoded to true since URL is set correctly
-                            return true;
+                            return CloudStorage.API_URL !== 'YOUR_VERCEL_URL_HERE' && 
+                                   CloudStorage.API_URL.startsWith('http');
                         },
                         
                         // Save to cloud
-                        saveToCloud: async (data, tag) => {
+                        saveToCloud: async (data) => {
                             try {
                                 if (!CloudStorage.isConfigured()) {
                                     throw new Error('BACKEND_NOT_CONFIGURED');
                                 }
                                 
-                                const storageKey = `${CloudStorage.FIXED_KEY}_${tag}`;
-                                
                                 const dataToSave = {
                                     ...data,
-                                    storageKey: storageKey,
+                                    storageKey: CloudStorage.FIXED_KEY,
                                     timestamp: new Date().toISOString()
                                 };
                                 
@@ -765,7 +763,7 @@
                                         'Content-Type': 'application/json',
                                     },
                                     body: JSON.stringify({
-                                        key: storageKey,
+                                        key: CloudStorage.FIXED_KEY,
                                         data: dataToSave
                                     })
                                 });
@@ -784,30 +782,19 @@
                         },
                         
                         // Load from cloud
-                        loadFromCloud: async (tag) => {
+                        loadFromCloud: async () => {
                             try {
                                 if (!CloudStorage.isConfigured()) {
                                     throw new Error('BACKEND_NOT_CONFIGURED');
                                 }
                                 
-                                let url;
-                                if (tag && tag.trim() !== '') {
-                                    // Load specific tag
-                                    const storageKey = `${CloudStorage.FIXED_KEY}_${tag}`;
-                                    url = `${CloudStorage.API_URL}/api/storage?key=${storageKey}`;
-                                } else {
-                                    // Load latest record (any tag)
-                                    url = `${CloudStorage.API_URL}/api/storage?key=${CloudStorage.FIXED_KEY}&latest=true`;
-                                }
-                                
-                                const response = await fetch(url);
+                                const response = await fetch(
+                                    `${CloudStorage.API_URL}/api/storage?key=${CloudStorage.FIXED_KEY}`
+                                );
                                 
                                 if (!response.ok) {
                                     if (response.status === 404) {
-                                        const message = tag && tag.trim() !== '' 
-                                            ? `No data found for tag "${tag}". Please save first.`
-                                            : 'No data found in cloud. Please save first.';
-                                        throw new Error(message);
+                                        throw new Error('No data found in cloud. Please save to cloud first.');
                                     }
                                     const error = await response.json();
                                     throw new Error(error.error || 'Failed to load from cloud');
@@ -841,7 +828,6 @@
                     { id: 1, name: '', baseArea: '', factor: '1' }
                 ]);
                 const [numberOfPeople, setNumberOfPeople] = useState('');
-                const [tag, setTag] = useState('');
                 const [allDistributions, setAllDistributions] = useState([]);
                 const [errorMessage, setErrorMessage] = useState('');
                 const [infoMessage, setInfoMessage] = useState('');
@@ -882,15 +868,14 @@
                             return; // Backend not configured, skip auto-load
                         }
                         
-                        const cloudData = await CloudStorage.loadFromCloud(''); // Empty = latest
+                        const cloudData = await CloudStorage.loadFromCloud();
                         
                         if (cloudData) {
                             if (cloudData.landPieces) setLandPieces(cloudData.landPieces);
                             if (cloudData.numberOfPeople) setNumberOfPeople(cloudData.numberOfPeople);
                             if (cloudData.allDistributions) setAllDistributions(cloudData.allDistributions);
-                            if (cloudData.tag) setTag(cloudData.tag);
                             
-                            setInfoMessage('📥 Latest data loaded from cloud automatically');
+                            setInfoMessage('📥 Data loaded from cloud automatically');
                             setTimeout(() => setInfoMessage(''), 5000);
                         }
                     } catch (error) {
@@ -1115,7 +1100,7 @@
                         const url = URL.createObjectURL(blob);
                         const link = document.createElement('a');
                         link.href = url;
-                        link.download = `land-distribution-${Date.now()}.json`;
+                        link.download = `tarla-${Date.now()}.json`;
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
@@ -1192,13 +1177,11 @@
                         const data = {
                             landPieces,
                             numberOfPeople,
-                            allDistributions,
-                            tag
+                            allDistributions
                         };
                         
-                        const saveTag = tag && tag.trim() !== '' ? tag : 'default';
-                        await CloudStorage.saveToCloud(data, saveTag);
-                        setSuccessMessage(`✅ Data saved to cloud with tag "${saveTag}"!`);
+                        await CloudStorage.saveToCloud(data);
+                        setSuccessMessage('✅ Data saved to cloud! All devices can now load it instantly - no copying needed!');
                         setTimeout(() => setSuccessMessage(''), 5000);
                     } catch (e) {
                         if (e.message === 'BACKEND_NOT_CONFIGURED') {
@@ -1214,18 +1197,14 @@
                 const handleLoadFromCloudStorage = async () => {
                     setIsLoadingFromCloud(true);
                     try {
-                        const cloudData = await CloudStorage.loadFromCloud(tag);
+                        const cloudData = await CloudStorage.loadFromCloud();
                         
                         if (cloudData) {
                             if (cloudData.landPieces) setLandPieces(cloudData.landPieces);
                             if (cloudData.numberOfPeople) setNumberOfPeople(cloudData.numberOfPeople);
                             if (cloudData.allDistributions) setAllDistributions(cloudData.allDistributions);
-                            if (cloudData.tag) setTag(cloudData.tag);
                             
-                            const message = tag && tag.trim() !== '' 
-                                ? `✅ Data loaded from cloud (tag: "${tag}")!`
-                                : '✅ Latest data loaded from cloud!';
-                            setSuccessMessage(message);
+                            setSuccessMessage('✅ Data loaded from cloud successfully!');
                             setTimeout(() => setSuccessMessage(''), 5000);
                             setErrorMessage('');
                         }
@@ -1294,29 +1273,6 @@
                     <div className="container">
                         <h1>Land Distribution Calculator</h1>
                         <p className="subtitle">Fair and equal distribution of land among inheritors</p>
-
-                        <div style={{maxWidth: '400px', margin: '0 auto 30px auto'}}>
-                            <label style={{display: 'block', marginBottom: '8px', color: '#555', fontWeight: '600'}}>
-                                📌 Scenario Tag:
-                            </label>
-                            <input 
-                                type="text"
-                                value={tag}
-                                onChange={(e) => setTag(e.target.value)}
-                                placeholder="Leave empty to load latest, or enter tag name"
-                                style={{
-                                    width: '100%',
-                                    padding: '12px',
-                                    fontSize: '16px',
-                                    border: '2px solid #ddd',
-                                    borderRadius: '8px',
-                                    outline: 'none'
-                                }}
-                            />
-                            <p style={{marginTop: '8px', fontSize: '0.85em', color: '#888'}}>
-                                Empty = load latest record • With tag = save/load specific scenario
-                            </p>
-                        </div>
 
                         <div className="toolbar">
                             <button className="btn-toolbar" onClick={handleSave}>
